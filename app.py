@@ -5,6 +5,13 @@ from datetime import datetime
 # 1. Configura a página
 st.set_page_config(page_title="Gofoni Advogados - Automação", layout="wide")
 
+# --- A MÁGICA DA MEMÓRIA COMEÇA AQUI ---
+# Cria uma memória para o aplicativo não esquecer que gerou os documentos
+if 'documentos_prontos' not in st.session_state:
+    st.session_state['documentos_prontos'] = False
+    st.session_state['nome_cliente'] = ""
+# ---------------------------------------
+
 # 2. Lógica da data automática
 meses_pt = {
     1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril', 
@@ -75,26 +82,42 @@ if st.button("🚀 GERAR KIT DE DOCUMENTOS", use_container_width=True):
         documentos = ['modelo_procuracao.docx', 'modelo_hipossuficiencia.docx', 'modelo_contrato.docx']
         
         try:
-            st.success(f"✅ Sucesso! O Kit de {nome} foi gerado! Clique nos botões abaixo para baixar:")
-            st.balloons()
-            
             for doc_nome in documentos:
                 template = DocxTemplate(doc_nome)
                 template.render(dados_cliente)
-                
-                # Novo nome do arquivo
                 novo_nome = doc_nome.replace("modelo_", f"{nome}_")
-                
-                # Salva temporariamente na memória da nuvem
                 template.save(novo_nome)
-                
-                # Cria um botão de Download lindão para cada arquivo!
-                with open(novo_nome, "rb") as file:
-                    st.download_button(
-                        label=f"📥 Baixar {novo_nome}",
-                        data=file,
-                        file_name=novo_nome
-                    )
+            
+            # Avisa a "memória" que está tudo pronto e guarda o nome do cliente
+            st.session_state['documentos_prontos'] = True
+            st.session_state['nome_cliente'] = nome
+            
+            st.success(f"✅ Sucesso! O Kit de {nome} foi gerado!")
+            st.balloons()
             
         except Exception as erro:
             st.error(f"Ocorreu um erro: {erro}")
+
+# --- SEÇÃO DE DOWNLOAD FIXA ---
+# Como ela está fora do botão de Gerar, ela não some quando a página recarrega!
+if st.session_state['documentos_prontos']:
+    st.markdown("### 📥 Arquivos Prontos para Download:")
+    
+    documentos = ['modelo_procuracao.docx', 'modelo_hipossuficiencia.docx', 'modelo_contrato.docx']
+    
+    # Criamos 3 colunas para colocar um botão do lado do outro (fica mais bonito!)
+    col_btn1, col_btn2, col_btn3 = st.columns(3)
+    
+    for i, doc_nome in enumerate(documentos):
+        novo_nome = doc_nome.replace("modelo_", f"{st.session_state['nome_cliente']}_")
+        try:
+            with open(novo_nome, "rb") as file:
+                # Distribui os botões nas colunas
+                if i == 0:
+                    col_btn1.download_button(label=f"📄 Procuração", data=file, file_name=novo_nome, use_container_width=True)
+                elif i == 1:
+                    col_btn2.download_button(label=f"📄 Hipossuficiência", data=file, file_name=novo_nome, use_container_width=True)
+                else:
+                    col_btn3.download_button(label=f"📄 Contrato", data=file, file_name=novo_nome, use_container_width=True)
+        except:
+            pass
