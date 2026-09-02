@@ -79,7 +79,7 @@ if st.button("🚀 GERAR KIT DE DOCUMENTOS", use_container_width=True):
             st.balloons()
             
             for doc_nome in documentos:
-                template = DocxTemplate(f"modelos/{doc_nome}")
+                template = DocxTemplate(doc_nome)
                 template.render(dados_cliente)
                 
                 # Novo nome do arquivo
