@@ -4,18 +4,18 @@ from datetime import datetime
 import google.generativeai as genai
 
 # 1. Configura a página e a memória
-st.set_page_config(page_title="Gofoni Advogados - Automação IA", layout="wide")
+st.set_page_config(page_title="Gofoni Advogados - Automação", layout="wide")
 
 if 'documentos_prontos' not in st.session_state:
     st.session_state['documentos_prontos'] = False
     st.session_state['nome_cliente'] = ""
 
-# 2. Conecta o cérebro da IA (puxando a senha secreta)
+# 2. Conecta a API (rodando nos bastidores)
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     modelo_ia = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
-    st.error("Erro ao conectar com a IA. Verifique se a chave foi salva corretamente no Secrets.")
+    st.error("Erro de conexão. Verifique as configurações do sistema.")
 
 # 3. Lógica da data
 meses_pt = {
@@ -30,8 +30,8 @@ ano = data_atual.year
 data_formatada = f"{dia} de {mes} de {ano}"
 
 # Título do sistema
-st.title("⚖️ Sistema de Geração de Contratos (Powered by AI)")
-st.markdown("Preencha os dados e descreva o acordo. A Inteligência Artificial vai redigir as cláusulas para você!")
+st.title("⚖️ Sistema de Geração de Contratos")
+st.markdown("Preencha os dados abaixo para gerar a Procuração, Hipossuficiência e Contrato.")
 
 # --- SEÇÃO 1: Dados do Cliente ---
 st.header("👤 Dados do Cliente")
@@ -51,20 +51,19 @@ with col2:
     cidade_assinatura = st.text_input("Cidade da Assinatura", value="Nova Iguaçu/RJ")
     data = st.text_input("Data do Documento", value=data_formatada)
 
-# --- SEÇÃO 2: A MÁGICA DA IA ---
-st.header("✨ Condições de Pagamento (Inteligência Artificial)")
-st.info("Escreva do seu jeito. A IA vai transformar em juridiquês perfeito e encaixar embaixo de cada título no Word.")
+# --- SEÇÃO 2: Condições de Pagamento ---
+st.header("💰 Condições de Pagamento")
 
 col_ia1, col_ia2 = st.columns(2)
 
 with col_ia1:
     st.markdown("**Cláusula 3ª (Honorários / Êxito)**")
-    input_clausula_3 = st.text_area("Como será cobrado o êxito ou valor principal?", 
+    input_clausula_3 = st.text_area("Descreva a forma de cobrança do êxito ou valor principal:", 
                                     placeholder="Ex: 30% sobre o proveito econômico da causa ao final do processo.")
 
 with col_ia2:
     st.markdown("**Cláusula 4ª (Atendimentos e Despesas)**")
-    input_clausula_4 = st.text_area("Como será a cobrança inicial ou de despesas?", 
+    input_clausula_4 = st.text_area("Descreva a cobrança inicial ou de despesas:", 
                                     placeholder="Ex: 1500 de entrada no pix hoje e 3x de 500 no boleto todo dia 10.")
 
 st.markdown("---")
@@ -72,9 +71,9 @@ st.markdown("---")
 # --- SEÇÃO 3: Geração dos Documentos ---
 if st.button("🚀 GERAR KIT DE DOCUMENTOS", use_container_width=True):
     if nome == "" or input_clausula_3 == "" or input_clausula_4 == "":
-        st.error("Por favor, preencha o Nome do Cliente e as duas caixas de condições de pagamento!")
+        st.error("Por favor, preencha o Nome do Cliente e os campos de Condições de Pagamento.")
     else:
-        with st.spinner("A Inteligência Artificial está redigindo o contrato... 🧠"):
+        with st.spinner("Processando e gerando documentos..."):
             try:
                 # Prompt para a Cláusula 3
                 prompt_3 = f"""
@@ -124,8 +123,7 @@ if st.button("🚀 GERAR KIT DE DOCUMENTOS", use_container_width=True):
                 st.session_state['documentos_prontos'] = True
                 st.session_state['nome_cliente'] = nome
                 
-                st.success(f"✅ Sucesso! O Kit de {nome} foi gerado com cláusulas super inteligentes!")
-                st.balloons()
+                st.success(f"✅ Kit de documentos gerado com sucesso.")
                 
             except Exception as erro:
                 st.error(f"Ocorreu um erro durante a geração: {erro}")
