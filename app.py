@@ -10,12 +10,13 @@ if 'documentos_prontos' not in st.session_state:
     st.session_state['documentos_prontos'] = False
     st.session_state['nome_cliente'] = ""
 
-# 2. Conecta a API
+# 2. Conecta a API (usando o modelo super atualizado!)
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    modelo_ia = genai.GenerativeModel('gemini-1.5-flash')
+    # Aqui está o segredo: usando o modelo novo que o detetive encontrou!
+    modelo_ia = genai.GenerativeModel('gemini-3.5-flash')
 except Exception as e:
-    st.error("Erro de conexão com a API.")
+    st.error("Erro de conexão. Verifique as configurações do sistema.")
 
 # 3. Lógica da data
 meses_pt = {
@@ -29,6 +30,7 @@ mes = meses_pt[data_atual.month]
 ano = data_atual.year
 data_formatada = f"{dia} de {mes} de {ano}"
 
+# Título do sistema
 st.title("⚖️ Sistema de Geração de Contratos")
 st.markdown("Preencha os dados abaixo para gerar a Procuração, Hipossuficiência e Contrato.")
 
@@ -118,6 +120,7 @@ if st.button("🚀 GERAR KIT DE DOCUMENTOS", use_container_width=True):
                     novo_nome = doc_nome.replace("modelo_", f"{nome}_")
                     template.save(novo_nome)
                 
+                # Salva na memória que os documentos estão prontos
                 st.session_state['documentos_prontos'] = True
                 st.session_state['nome_cliente'] = nome
                 
@@ -125,15 +128,6 @@ if st.button("🚀 GERAR KIT DE DOCUMENTOS", use_container_width=True):
                 
             except Exception as erro:
                 st.error(f"Ocorreu um erro durante a geração: {erro}")
-                
-                # O CÓDIGO DETETIVE ENTRA EM AÇÃO AQUI:
-                st.info("🔍 DIAGNÓSTICO: Buscando diretamente no Google quais modelos a sua chave tem acesso...")
-                try:
-                    modelos_disponiveis = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                    st.write("**Estes são os modelos que apareceram:**")
-                    st.code(modelos_disponiveis)
-                except Exception as erro2:
-                    st.error(f"Não conseguimos puxar a lista. Verifique se a sua chave está 100% certa no Streamlit Secrets. Detalhe: {erro2}")
 
 # --- SEÇÃO 4: Download Fixo ---
 if st.session_state['documentos_prontos']:
