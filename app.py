@@ -1,18 +1,23 @@
 import streamlit as st
 from docxtpl import DocxTemplate
 from datetime import datetime
+import google.generativeai as genai
 
-# 1. Configura a página
-st.set_page_config(page_title="Gofoni Advogados - Automação", layout="wide")
+# 1. Configura a página e a memória
+st.set_page_config(page_title="Gofoni Advogados - Automação IA", layout="wide")
 
-# --- A MÁGICA DA MEMÓRIA COMEÇA AQUI ---
-# Cria uma memória para o aplicativo não esquecer que gerou os documentos
 if 'documentos_prontos' not in st.session_state:
     st.session_state['documentos_prontos'] = False
     st.session_state['nome_cliente'] = ""
-# ---------------------------------------
 
-# 2. Lógica da data automática
+# 2. Conecta o cérebro da IA (puxando a senha secreta)
+try:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    modelo_ia = genai.GenerativeModel('gemini-1.5-flash')
+except Exception as e:
+    st.error("Erro ao conectar com a IA. Verifique se a chave foi salva corretamente no Secrets.")
+
+# 3. Lógica da data
 meses_pt = {
     1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril', 
     5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto', 
@@ -25,10 +30,10 @@ ano = data_atual.year
 data_formatada = f"{dia} de {mes} de {ano}"
 
 # Título do sistema
-st.title("⚖️ Sistema de Geração de Contratos")
-st.markdown("Preencha os dados abaixo para gerar a Procuração, Hipossuficiência e Contrato automaticamente.")
+st.title("⚖️ Sistema de Geração de Contratos (Powered by AI)")
+st.markdown("Preencha os dados e descreva o acordo. A Inteligência Artificial vai redigir as cláusulas para você!")
 
-# Dados do Cliente
+# --- SEÇÃO 1: Dados do Cliente ---
 st.header("👤 Dados do Cliente")
 col1, col2 = st.columns(2)
 
@@ -46,73 +51,95 @@ with col2:
     cidade_assinatura = st.text_input("Cidade da Assinatura", value="Nova Iguaçu/RJ")
     data = st.text_input("Data do Documento", value=data_formatada)
 
-# Dados do Contrato
-st.header("💰 Dados do Contrato")
-col3, col4 = st.columns(2)
+# --- SEÇÃO 2: A MÁGICA DA IA ---
+st.header("✨ Condições de Pagamento (Inteligência Artificial)")
+st.info("Escreva do seu jeito. A IA vai transformar em juridiquês perfeito e encaixar embaixo de cada título no Word.")
 
-with col3:
-    porcentagem = st.text_input("Porcentagem de Êxito", value="30% (trinta por cento)")
-with col4:
-    valor_consulta = st.text_input("Valor Adicional (R$)", value="R$ 300,00")
-    valor_consulta_extenso = st.text_input("Valor Adicional por extenso", value="trezentos reais")
+col_ia1, col_ia2 = st.columns(2)
+
+with col_ia1:
+    st.markdown("**Cláusula 3ª (Honorários / Êxito)**")
+    input_clausula_3 = st.text_area("Como será cobrado o êxito ou valor principal?", 
+                                    placeholder="Ex: 30% sobre o proveito econômico da causa ao final do processo.")
+
+with col_ia2:
+    st.markdown("**Cláusula 4ª (Atendimentos e Despesas)**")
+    input_clausula_4 = st.text_area("Como será a cobrança inicial ou de despesas?", 
+                                    placeholder="Ex: 1500 de entrada no pix hoje e 3x de 500 no boleto todo dia 10.")
 
 st.markdown("---")
 
-# Botão Gerar
+# --- SEÇÃO 3: Geração dos Documentos ---
 if st.button("🚀 GERAR KIT DE DOCUMENTOS", use_container_width=True):
-    if nome == "":
-        st.error("Por favor, preencha pelo menos o Nome do Cliente!")
+    if nome == "" or input_clausula_3 == "" or input_clausula_4 == "":
+        st.error("Por favor, preencha o Nome do Cliente e as duas caixas de condições de pagamento!")
     else:
-        dados_cliente = {
-            'NOME_CLIENTE': nome.upper(),
-            'NACIONALIDADE': nacionalidade,
-            'ESTADO_CIVIL': estado_civil,
-            'RG': rg,
-            'ORGAO_EMISSOR': orgao_emissor,
-            'CPF': cpf,
-            'ENDERECO': endereco,
-            'TELEFONE': telefone,
-            'CIDADE_ASSINATURA': cidade_assinatura,
-            'DATA': data,
-            'PORCENTAGEM_HONORARIOS': porcentagem,
-            'VALOR_CONSULTA': valor_consulta,
-            'VALOR_CONSULTA_EXTENSO': valor_consulta_extenso
-        }
+        with st.spinner("A Inteligência Artificial está redigindo o contrato... 🧠"):
+            try:
+                # Prompt para a Cláusula 3
+                prompt_3 = f"""
+                Você é um advogado brasileiro redigindo um contrato de honorários.
+                Escreva APENAS o texto contínuo da Cláusula de Honorários Contratuais, baseada neste acordo: "{input_clausula_3}".
+                Escreva valores em números e por extenso. 
+                NÃO coloque o título da cláusula, NÃO converse comigo e NÃO use formatação (sem negrito ou asteriscos). Apenas o texto.
+                """
+                resposta_3 = modelo_ia.generate_content(prompt_3)
+                texto_final_3 = resposta_3.text.strip()
 
-        documentos = ['modelo_procuracao.docx', 'modelo_hipossuficiencia.docx', 'modelo_contrato.docx']
-        
-        try:
-            for doc_nome in documentos:
-                template = DocxTemplate(doc_nome)
-                template.render(dados_cliente)
-                novo_nome = doc_nome.replace("modelo_", f"{nome}_")
-                template.save(novo_nome)
-            
-            # Avisa a "memória" que está tudo pronto e guarda o nome do cliente
-            st.session_state['documentos_prontos'] = True
-            st.session_state['nome_cliente'] = nome
-            
-            st.success(f"✅ Sucesso! O Kit de {nome} foi gerado!")
-            st.balloons()
-            
-        except Exception as erro:
-            st.error(f"Ocorreu um erro: {erro}")
+                # Prompt para a Cláusula 4
+                prompt_4 = f"""
+                Você é um advogado brasileiro redigindo um contrato de honorários.
+                Escreva APENAS o texto contínuo da Cláusula de Atendimentos e Despesas, baseada neste acordo: "{input_clausula_4}".
+                Escreva valores em números e por extenso. 
+                NÃO coloque o título da cláusula, NÃO converse comigo e NÃO use formatação (sem negrito ou asteriscos). Apenas o texto.
+                """
+                resposta_4 = modelo_ia.generate_content(prompt_4)
+                texto_final_4 = resposta_4.text.strip()
+                
+                # Juntando tudo para mandar pro Word
+                dados_cliente = {
+                    'NOME_CLIENTE': nome.upper(),
+                    'NACIONALIDADE': nacionalidade,
+                    'ESTADO_CIVIL': estado_civil,
+                    'RG': rg,
+                    'ORGAO_EMISSOR': orgao_emissor,
+                    'CPF': cpf,
+                    'ENDERECO': endereco,
+                    'TELEFONE': telefone,
+                    'CIDADE_ASSINATURA': cidade_assinatura,
+                    'DATA': data,
+                    'TEXTO_CLAUSULA_3': texto_final_3,
+                    'TEXTO_CLAUSULA_4': texto_final_4
+                }
 
-# --- SEÇÃO DE DOWNLOAD FIXA ---
-# Como ela está fora do botão de Gerar, ela não some quando a página recarrega!
+                documentos = ['modelo_procuracao.docx', 'modelo_hipossuficiencia.docx', 'modelo_contrato.docx']
+                
+                for doc_nome in documentos:
+                    template = DocxTemplate(doc_nome)
+                    template.render(dados_cliente)
+                    novo_nome = doc_nome.replace("modelo_", f"{nome}_")
+                    template.save(novo_nome)
+                
+                # Salva na memória que os documentos estão prontos
+                st.session_state['documentos_prontos'] = True
+                st.session_state['nome_cliente'] = nome
+                
+                st.success(f"✅ Sucesso! O Kit de {nome} foi gerado com cláusulas super inteligentes!")
+                st.balloons()
+                
+            except Exception as erro:
+                st.error(f"Ocorreu um erro durante a geração: {erro}")
+
+# --- SEÇÃO 4: Download Fixo ---
 if st.session_state['documentos_prontos']:
     st.markdown("### 📥 Arquivos Prontos para Download:")
-    
     documentos = ['modelo_procuracao.docx', 'modelo_hipossuficiencia.docx', 'modelo_contrato.docx']
-    
-    # Criamos 3 colunas para colocar um botão do lado do outro (fica mais bonito!)
     col_btn1, col_btn2, col_btn3 = st.columns(3)
     
     for i, doc_nome in enumerate(documentos):
         novo_nome = doc_nome.replace("modelo_", f"{st.session_state['nome_cliente']}_")
         try:
             with open(novo_nome, "rb") as file:
-                # Distribui os botões nas colunas
                 if i == 0:
                     col_btn1.download_button(label=f"📄 Procuração", data=file, file_name=novo_nome, use_container_width=True)
                 elif i == 1:
