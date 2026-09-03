@@ -13,7 +13,7 @@ if 'documentos_prontos' not in st.session_state:
 # 2. Conecta a API (rodando nos bastidores)
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    modelo_ia = genai.GenerativeModel('gemini-1.5-flash')
+    modelo_ia = genai.GenerativeModel('gemini-pro')
 except Exception as e:
     st.error("Erro de conexão. Verifique as configurações do sistema.")
 
