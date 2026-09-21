@@ -14,7 +14,7 @@ if 'documentos_prontos' not in st.session_state:
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     # Aqui está o segredo: usando o modelo novo que o detetive encontrou!
-    modelo_ia = genai.GenerativeModel('gemini-3.5-flash')
+    modelo_ia = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
     st.error("Erro de conexão. Verifique as configurações do sistema.")
 
